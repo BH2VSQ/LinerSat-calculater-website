@@ -138,7 +138,7 @@
                 <div class="card">
                     <h2 class="text-xl font-bold text-white mb-4">实时跟踪</h2>
                     <div id="tracking-data-placeholder" class="flex items-center justify-center h-full text-gray-400">请先选择卫星并设置观测点。</div>
-                    <div id="tracking-data-container" class="hidden grid grid-cols-2 gap-4">
+                    <div id="tracking-data-container" class="hidden grid grid-cols-2 gap-y-4 gap-x-4">
                         <div>
                             <p class="text-sm text-gray-400">方位角 (Az)</p>
                             <p id="azimuth" class="text-2xl font-bold text-white">-</p>
@@ -147,13 +147,17 @@
                             <p class="text-sm text-gray-400">仰角 (El)</p>
                             <p id="elevation" class="text-2xl font-bold text-white">-</p>
                         </div>
-                        <div>
+                        <div class="col-span-2">
                             <p class="text-sm text-gray-400">距离 (km)</p>
                             <p id="range" class="text-2xl font-bold text-white">-</p>
                         </div>
                         <div>
+                            <p class="text-sm text-gray-400">多普勒 (Hz @145M)</p>
+                            <p id="doppler-145" class="text-2xl font-bold text-white">-</p>
+                        </div>
+                        <div>
                             <p class="text-sm text-gray-400">多普勒 (Hz @435M)</p>
-                            <p id="doppler" class="text-2xl font-bold text-white">-</p>
+                            <p id="doppler-435" class="text-2xl font-bold text-white">-</p>
                         </div>
                     </div>
                 </div>
@@ -223,7 +227,7 @@
             'MO-122 / MESAT1': { norad: 60209, uplink_start: 145.910, uplink_end: 145.940, downlink_start: 435.810, downlink_end: 435.840, beacon: 435.8, inverting: false },
         };
         const DEFAULT_SATELLITE = 'RS-44';
-        const TLE_SOURCE_URL = 'http://www.celestrak.com/NORAD/elements/amateur.txt';
+        const TLE_SOURCE_URL = 'https://www.celestrak.com/NORAD/elements/amateur.txt';
         const FALLBACK_TLE = `
 RS-44
 1 44909U 19098A   24169.58584104  .00010042  00000+0  17889-3 0  9997
@@ -255,7 +259,8 @@ MESAT1
         const azimuthEl = document.getElementById('azimuth');
         const elevationEl = document.getElementById('elevation');
         const rangeEl = document.getElementById('range');
-        const dopplerEl = document.getElementById('doppler');
+        const doppler435El = document.getElementById('doppler-435');
+        const doppler145El = document.getElementById('doppler-145');
         const uplinkFreqInput = document.getElementById('uplink-freq');
         const downlinkFreqInput = document.getElementById('downlink-freq');
         const calcDownlinkEl = document.getElementById('calculated-downlink');
@@ -519,7 +524,8 @@ MESAT1
             azimuthEl.textContent = '计算失败';
             elevationEl.textContent = '计算失败';
             rangeEl.textContent = 'N/A';
-            dopplerEl.textContent = 'N/A';
+            doppler435El.textContent = 'N/A';
+            doppler145El.textContent = 'N/A';
             
             const passStatusEl = document.getElementById('pass-status');
             passStatusEl.textContent = '计算失败';
@@ -558,8 +564,12 @@ MESAT1
             const observerEcf = satellite.geodeticToEcf(observerGd);
             const velocityEcf = satellite.eciToEcf(positionAndVelocity.velocity, gmst);
             const dopplerFactor = satellite.dopplerFactor(observerEcf, positionEcf, velocityEcf);
-            const dopplerShift = (dopplerFactor - 1) * 435000000;
-            dopplerEl.textContent = !isNaN(dopplerShift) ? dopplerShift.toFixed(0) : '-';
+            
+            const dopplerShift435 = (dopplerFactor - 1) * 435000000;
+            doppler435El.textContent = !isNaN(dopplerShift435) ? dopplerShift435.toFixed(0) : '-';
+            
+            const dopplerShift145 = (dopplerFactor - 1) * 145000000;
+            doppler145El.textContent = !isNaN(dopplerShift145) ? dopplerShift145.toFixed(0) : '-';
             
             updateFrequencyCalculations();
         }
