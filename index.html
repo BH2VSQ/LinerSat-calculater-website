@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>业余无线电线性卫星频率计算器</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- satellite.js: for orbital mechanics calculations -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.4/satellite.min.js"></script>
+    <!-- Local JS files -->
+    <script src="./tailwindcss.js"></script>
+    <script src="./satellite.min.js"></script>
     <style>
         /* Custom styles for a better look and feel */
         body {
@@ -183,26 +182,30 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     <!-- Uplink -->
                     <div>
-                        <label class="block text-center text-sm font-medium mb-2">上行频率 (MHz)</label>
-                        <div class="flex items-center gap-1">
-                            <button class="btn btn-secondary" onclick="adjustFreq('uplink', -5)">-5k</button>
-                            <button class="btn btn-secondary" onclick="adjustFreq('uplink', -1)">-1k</button>
-                            <input type="number" id="uplink-freq" step="0.00001" class="input-field text-center font-mono text-lg">
-                            <button class="btn btn-secondary" onclick="adjustFreq('uplink', 1)">+1k</button>
-                            <button class="btn btn-secondary" onclick="adjustFreq('uplink', 5)">+5k</button>
+                        <label for="uplink-freq" class="block text-center text-sm font-medium mb-2">上行频率 (MHz)</label>
+                        <input type="number" id="uplink-freq" step="0.00001" class="input-field text-center font-mono text-lg mb-2">
+                        <div class="flex justify-center items-center gap-1">
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('uplink', -10)">-10k</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('uplink', -1)">-1k</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('uplink', -0.1)">-100</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('uplink', 0.1)">+100</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('uplink', 1)">+1k</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('uplink', 10)">+10k</button>
                         </div>
                         <p class="text-center text-xs text-gray-400 mt-2">计算出的下行频率</p>
                         <div id="calculated-downlink" class="mt-1 text-center font-mono text-xl h-8 p-1 bg-gray-900 rounded-md text-cyan-400">-</div>
                     </div>
                     <!-- Downlink -->
                     <div>
-                        <label class="block text-center text-sm font-medium mb-2">下行频率 (MHz)</label>
-                        <div class="flex items-center gap-1">
-                            <button class="btn btn-secondary" onclick="adjustFreq('downlink', -5)">-5k</button>
-                            <button class="btn btn-secondary" onclick="adjustFreq('downlink', -1)">-1k</button>
-                            <input type="number" id="downlink-freq" step="0.00001" class="input-field text-center font-mono text-lg">
-                            <button class="btn btn-secondary" onclick="adjustFreq('downlink', 1)">+1k</button>
-                            <button class="btn btn-secondary" onclick="adjustFreq('downlink', 5)">+5k</button>
+                        <label for="downlink-freq" class="block text-center text-sm font-medium mb-2">下行频率 (MHz)</label>
+                         <input type="number" id="downlink-freq" step="0.00001" class="input-field text-center font-mono text-lg mb-2">
+                         <div class="flex justify-center items-center gap-1">
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('downlink', -10)">-10k</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('downlink', -1)">-1k</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('downlink', -0.1)">-100</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('downlink', 0.1)">+100</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('downlink', 1)">+1k</button>
+                            <button class="btn btn-secondary py-1 px-2 text-xs" onclick="adjustFreq('downlink', 10)">+10k</button>
                         </div>
                         <p class="text-center text-xs text-gray-400 mt-2">计算出的上行频率</p>
                         <div id="calculated-uplink" class="mt-1 text-center font-mono text-xl h-8 p-1 bg-gray-900 rounded-md text-yellow-400">-</div>
@@ -211,16 +214,16 @@
             </div>
         </div>
     </div>
-
+    
     <script>
-        // --- CONFIGURATION ---
+        // --- Application Logic ---
         const SATELLITES = {
             'RS-44': { norad: 44909, uplink_start: 145.935, uplink_end: 145.995, downlink_start: 435.670, downlink_end: 435.610, beacon: 435.605, inverting: true },
             'JO-97': { norad: 43803, uplink_start: 435.100, uplink_end: 435.120, downlink_start: 145.875, downlink_end: 145.855, beacon: 145.840, inverting: true },
             'MO-122 / MESAT1': { norad: 60209, uplink_start: 145.910, uplink_end: 145.940, downlink_start: 435.810, downlink_end: 435.840, beacon: 435.8, inverting: false },
         };
         const DEFAULT_SATELLITE = 'RS-44';
-        const TLE_SOURCE_URL = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle';
+        const TLE_SOURCE_URL = 'http://www.celestrak.com/NORAD/elements/amateur.txt';
         const FALLBACK_TLE = `
 RS-44
 1 44909U 19098A   24169.58584104  .00010042  00000+0  17889-3 0  9997
@@ -233,7 +236,6 @@ MESAT1
 2 60209  97.4579 198.5447 0014704  55.0886 305.0818 15.08868972  3298
 `;
 
-        // --- GLOBAL STATE ---
         let tleData = {};
         let observerLocation = null;
         let selectedSatelliteKey = null;
@@ -242,7 +244,6 @@ MESAT1
         let passPredictionInterval = null;
         let passCountdownInterval = null;
         
-        // --- DOM ELEMENTS ---
         const satSelect = document.getElementById('satellite-select');
         const tleStatus = document.getElementById('tle-status');
         const currentLocationEl = document.getElementById('current-location');
@@ -260,7 +261,6 @@ MESAT1
         const calcDownlinkEl = document.getElementById('calculated-downlink');
         const calcUplinkEl = document.getElementById('calculated-uplink');
 
-        // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', init);
 
         function init() {
@@ -286,12 +286,10 @@ MESAT1
             document.getElementById('sync-tle-btn').addEventListener('click', () => loadTleData(true));
             document.getElementById('sync-gps-btn').addEventListener('click', syncGpsLocation);
             document.getElementById('convert-grid-btn').addEventListener('click', convertMaidenhead);
-            // Any input triggers a full recalculation.
             uplinkFreqInput.addEventListener('input', updateFrequencyCalculations);
             downlinkFreqInput.addEventListener('input', updateFrequencyCalculations);
         }
 
-        // --- TLE MANAGEMENT ---
         async function loadTleData(forceOnline = false) {
             tleStatus.textContent = '正在获取星历...';
             let loadedFrom = null;
@@ -345,11 +343,11 @@ MESAT1
         function parseTle(tleText) {
             const lines = tleText.trim().split('\n').map(l => l.trim());
             const parsed = {};
-            for (let i = 0; i < lines.length - 2; i++) {
-                const line1 = lines[i + 1];
-                const line2 = lines[i + 2];
-
-                if (line1 && line2 && line1.startsWith('1 ') && line2.startsWith('2 ')) {
+            for (let i = 0; i < lines.length; i += 3) {
+                 const name = lines[i];
+                 const line1 = lines[i + 1];
+                 const line2 = lines[i + 2];
+                if (name && line1 && line2 && line1.startsWith('1 ') && line2.startsWith('2 ')) {
                     const noradId = parseInt(line1.substring(2, 7), 10);
                     const satKey = Object.keys(SATELLITES).find(key => SATELLITES[key].norad === noradId);
                     
@@ -361,8 +359,6 @@ MESAT1
             return parsed;
         }
 
-
-        // --- OBSERVER LOCATION ---
         function loadObserverLocation() {
             const savedLocation = getCookie('observerLocation');
             if (savedLocation) {
@@ -435,7 +431,6 @@ MESAT1
             }
         }
 
-        // --- SATELLITE & TRACKING CONTROL ---
         function onSatelliteChange(event) {
             selectedSatelliteKey = event.target.value;
             setCookie('selectedSatellite', selectedSatelliteKey, 365);
@@ -533,7 +528,6 @@ MESAT1
             document.getElementById('pass-details').textContent = '-';
         }
 
-        // --- CORE CALCULATIONS ---
         function updateTrackingData() {
             if (!satrec || !observerLocation) return;
             
@@ -608,8 +602,6 @@ MESAT1
             const transponderCenterUp = (satConfig.uplink_start + satConfig.uplink_end) / 2 * 1e6;
             const transponderCenterDown = (satConfig.downlink_start + satConfig.downlink_end) / 2 * 1e6;
 
-            // **FIX**: Calculate both directions every time.
-            // Uplink -> Downlink
             const upFreqGround = parseFloat(uplinkFreqInput.value) * 1e6;
             if (!isNaN(upFreqGround)) {
                 const upFreqAtSat = upFreqGround * dopplerFactor;
@@ -621,7 +613,6 @@ MESAT1
                  calcDownlinkEl.textContent = '-';
             }
 
-            // Downlink -> Uplink
             const downFreqGround = parseFloat(downlinkFreqInput.value) * 1e6;
             if (!isNaN(downFreqGround)) {
                 const downFreqAtSat = downFreqGround / dopplerFactor;
@@ -644,7 +635,6 @@ MESAT1
             }
         }
 
-        // --- REVISED Pass Prediction Logic ---
         function runPassPrediction() {
             if (passCountdownInterval) clearInterval(passCountdownInterval);
             if (!satrec || !observerLocation) return;
@@ -734,7 +724,6 @@ MESAT1
             detailsEl.textContent = `${pass.max_elevation.toFixed(1)}° / ${durationMinutes} 分钟`;
         }
 
-        // --- UTILITIES ---
         function setCookie(name, value, days) {
             let expires = "";
             if (days) {
