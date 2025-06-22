@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>业余无线电线性卫星频率计算器</title>
+    <title>业余无线电卫星频率计算器</title>
     <!-- Local JS files -->
     <script src="./tailwindcss.js"></script>
     <script src="./satellite.min.js"></script>
@@ -86,7 +86,7 @@
     <div id="toast" class="toast"></div>
 
     <header class="text-center mb-6">
-        <h1 class="text-3xl md:text-4xl font-bold text-white">线性卫星频率计算器</h1>
+        <h1 class="text-3xl md:text-4xl font-bold text-white">业余无线电卫星频率计算器</h1>
         <p id="tle-status" class="text-sm text-gray-400 mt-1">正在初始化...</p>
     </header>
 
@@ -123,11 +123,16 @@
 
             <div id="satellite-info-card" class="card hidden">
                 <h2 id="sat-info-name" class="text-xl font-bold text-white mb-3"></h2>
-                <div class="space-y-2 text-sm">
+                <div id="sat-info-linear" class="hidden space-y-2 text-sm">
                     <p>上行范围: <span id="sat-info-uplink" class="font-mono"></span></p>
                     <p>下行范围: <span id="sat-info-downlink" class="font-mono"></span></p>
                     <p>信标频率: <span id="sat-info-beacon" class="font-mono"></span></p>
                     <p>模式: <span id="sat-info-mode" class="font-mono"></span></p>
+                </div>
+                 <div id="sat-info-fm" class="hidden space-y-2 text-sm">
+                    <p>上行频率: <span id="sat-info-fm-uplink" class="font-mono"></span></p>
+                    <p>下行频率: <span id="sat-info-fm-downlink" class="font-mono"></span></p>
+                    <p>模式: <span class="font-mono">FM (语音/数字)</span></p>
                 </div>
             </div>
         </div>
@@ -181,7 +186,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div id="linear-calculator-card" class="card">
                 <h2 class="text-xl font-bold text-white mb-4">频率计算器</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     <!-- Uplink -->
@@ -216,15 +221,42 @@
                     </div>
                 </div>
             </div>
+            
+            <div id="fm-frequencies-card" class="card hidden">
+                 <h2 class="text-xl font-bold text-white mb-4">FM 频率</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div>
+                        <p class="text-center text-sm text-gray-400">上行频率 (MHz)</p>
+                        <div id="fm-uplink-display" class="mt-1 text-center font-mono text-xl h-8 p-1 bg-gray-900 rounded-md text-yellow-400">-</div>
+                    </div>
+                     <div>
+                        <p class="text-center text-sm text-gray-400">下行频率 (MHz)</p>
+                        <div id="fm-downlink-display" class="mt-1 text-center font-mono text-xl h-8 p-1 bg-gray-900 rounded-md text-cyan-400">-</div>
+                    </div>
+                 </div>
+            </div>
+
         </div>
     </div>
     
     <script>
         // --- Application Logic ---
         const SATELLITES = {
-            'RS-44': { norad: 44909, uplink_start: 145.935, uplink_end: 145.995, downlink_start: 435.670, downlink_end: 435.610, beacon: 435.605, inverting: true },
-            'JO-97': { norad: 43803, uplink_start: 435.100, uplink_end: 435.120, downlink_start: 145.875, downlink_end: 145.855, beacon: 145.840, inverting: true },
-            'MO-122 / MESAT1': { norad: 60209, uplink_start: 145.910, uplink_end: 145.940, downlink_start: 435.810, downlink_end: 435.840, beacon: 435.8, inverting: false },
+            // Linear Transponders
+            'RS-44': { norad: 44909, type: 'linear', uplink_start: 145.935, uplink_end: 145.995, downlink_start: 435.670, downlink_end: 435.610, beacon: 435.605, inverting: true },
+            'JO-97': { norad: 43803, type: 'linear', uplink_start: 435.100, uplink_end: 435.120, downlink_start: 145.875, downlink_end: 145.855, beacon: 145.840, inverting: true },
+            'MO-122 / MESAT1': { norad: 60209, type: 'linear', uplink_start: 145.910, uplink_end: 145.940, downlink_start: 435.810, downlink_end: 435.840, beacon: 435.8, inverting: false },
+            
+            // FM Satellites
+            'SO-50': { norad: 27607, type: 'fm', uplink: 145.8500, downlink: 436.7950 },
+            'ISS-FM': { norad: 25544, type: 'fm', uplink: 145.9900, downlink: 437.8000 },
+            'ISS-APRS': { norad: 25544, type: 'fm', uplink: 145.8250, downlink: 145.8250 },
+            'LAPAN-A2 (IO-86)': { norad: 40931, type: 'fm', uplink: 145.8800, downlink: 435.8800 },
+            'FOX-1B (AO-91)': { norad: 43017, type: 'fm', uplink: 435.2500, downlink: 145.9600 },
+            'DIWATA-2B (PO-101)': { norad: 43678, type: 'fm', uplink: 437.5000, downlink: 145.9000 },
+            'ASRTU-1/RS64S (AO-123)': { norad: 61781, type: 'fm', uplink: 145.8500, downlink: 435.4000 },
+            'HADES-R (SO-124)': { norad: 62690, type: 'fm', uplink: 145.9250, downlink: 436.8880 },
+            'HADES-ICM': { norad: 63492, type: 'fm', uplink: 145.9250, downlink: 436.8880 },
         };
         const DEFAULT_SATELLITE = 'RS-44';
         const TLE_SOURCE_URL = 'https://www.celestrak.com/NORAD/elements/amateur.txt';
@@ -232,12 +264,9 @@
 RS-44
 1 44909U 19098A   24169.58584104  .00010042  00000+0  17889-3 0  9997
 2 44909  87.8997 140.4045 0013002 108.3435 251.8124 15.19794024 45674
-FUNCUBE-5 (JO-97)
-1 43803U 18104D   24169.77174624  .00005085  00000+0  24933-3 0  9995
-2 43803  97.6321  15.1436 0013627 167.9738 192.1305 15.04838662309995
-MESAT1
-1 60209U 24098T   24169.65439818  .00007804  00000+0  47867-3 0  9993
-2 60209  97.4579 198.5447 0014704  55.0886 305.0818 15.08868972  3298
+SO-50
+1 27607U 02058C   24170.81438596  .00000455  00000+0  28375-3 0  9990
+2 27607  64.5501 106.3392 0014316 288.7838  71.2185 14.77373351114562
 `;
 
         let tleData = {};
@@ -265,6 +294,10 @@ MESAT1
         const downlinkFreqInput = document.getElementById('downlink-freq');
         const calcDownlinkEl = document.getElementById('calculated-downlink');
         const calcUplinkEl = document.getElementById('calculated-uplink');
+        const linearCalculatorCard = document.getElementById('linear-calculator-card');
+        const fmFrequenciesCard = document.getElementById('fm-frequencies-card');
+        const fmUplinkDisplay = document.getElementById('fm-uplink-display');
+        const fmDownlinkDisplay = document.getElementById('fm-downlink-display');
 
         document.addEventListener('DOMContentLoaded', init);
 
@@ -346,16 +379,16 @@ MESAT1
         }
 
         function parseTle(tleText) {
-            const lines = tleText.trim().split('\n').map(l => l.trim());
+            const lines = tleText.trim().split('\n');
             const parsed = {};
             for (let i = 0; i < lines.length; i += 3) {
-                 const name = lines[i];
+                 const name = lines[i].trim();
                  const line1 = lines[i + 1];
                  const line2 = lines[i + 2];
                 if (name && line1 && line2 && line1.startsWith('1 ') && line2.startsWith('2 ')) {
                     const noradId = parseInt(line1.substring(2, 7), 10);
+                    // Match by NORAD ID first
                     const satKey = Object.keys(SATELLITES).find(key => SATELLITES[key].norad === noradId);
-                    
                     if (satKey) {
                         parsed[noradId] = { tle1: line1, tle2: line2 };
                     }
@@ -480,8 +513,8 @@ MESAT1
                     trackingPlaceholder.textContent = "请设置观测点以开始跟踪。";
                     passPlaceholder.textContent = "请设置观测点以预报过境。";
                 } else if (!tle) {
-                     trackingPlaceholder.textContent = "等待卫星星历数据...";
-                     passPlaceholder.textContent = "等待卫星星历数据...";
+                     trackingPlaceholder.textContent = `等待 ${selectedSatelliteKey} 的星历数据...`;
+                     passPlaceholder.textContent = `等待 ${selectedSatelliteKey} 的星历数据...`;
                 }
             }
         }
@@ -491,26 +524,35 @@ MESAT1
             const infoCard = document.getElementById('satellite-info-card');
             if (satConfig) {
                 document.getElementById('sat-info-name').textContent = selectedSatelliteKey;
-                document.getElementById('sat-info-uplink').textContent = `${satConfig.uplink_start.toFixed(3)} - ${satConfig.uplink_end.toFixed(3)} MHz`;
-                
-                const downlinkRange = satConfig.inverting 
-                    ? `${Math.max(satConfig.downlink_start, satConfig.downlink_end).toFixed(3)} - ${Math.min(satConfig.downlink_start, satConfig.downlink_end).toFixed(3)} MHz`
-                    : `${Math.min(satConfig.downlink_start, satConfig.downlink_end).toFixed(3)} - ${Math.max(satConfig.downlink_start, satConfig.downlink_end).toFixed(3)} MHz`;
-                document.getElementById('sat-info-downlink').textContent = downlinkRange;
-                
-                document.getElementById('sat-info-beacon').textContent = satConfig.beacon ? `${satConfig.beacon.toFixed(3)} MHz` : '无';
-                document.getElementById('sat-info-mode').textContent = satConfig.inverting ? '倒置转发器 (Inverting)' : '非倒置转发器 (Non-inverting)';
+                if (satConfig.type === 'linear') {
+                    document.getElementById('sat-info-linear').classList.remove('hidden');
+                    document.getElementById('sat-info-fm').classList.add('hidden');
+                    linearCalculatorCard.classList.remove('hidden');
+                    fmFrequenciesCard.classList.add('hidden');
+                    
+                    document.getElementById('sat-info-uplink').textContent = `${satConfig.uplink_start.toFixed(3)} - ${satConfig.uplink_end.toFixed(3)} MHz`;
+                    const downlinkRange = satConfig.inverting 
+                        ? `${Math.max(satConfig.downlink_start, satConfig.downlink_end).toFixed(3)} - ${Math.min(satConfig.downlink_start, satConfig.downlink_end).toFixed(3)} MHz`
+                        : `${Math.min(satConfig.downlink_start, satConfig.downlink_end).toFixed(3)} - ${Math.max(satConfig.downlink_start, satConfig.downlink_end).toFixed(3)} MHz`;
+                    document.getElementById('sat-info-downlink').textContent = downlinkRange;
+                    document.getElementById('sat-info-beacon').textContent = satConfig.beacon ? `${satConfig.beacon.toFixed(3)} MHz` : '无';
+                    document.getElementById('sat-info-mode').textContent = satConfig.inverting ? '倒置转发器 (Inverting)' : '非倒置转发器 (Non-inverting)';
+
+                    const centerUplink = (satConfig.uplink_start + satConfig.uplink_end) / 2;
+                    const centerDownlink = (satConfig.downlink_start + satConfig.downlink_end) / 2;
+                    uplinkFreqInput.value = centerUplink.toFixed(5);
+                    downlinkFreqInput.value = centerDownlink.toFixed(5);
+                } else { // FM satellite
+                    document.getElementById('sat-info-linear').classList.add('hidden');
+                    document.getElementById('sat-info-fm').classList.remove('hidden');
+                    linearCalculatorCard.classList.add('hidden');
+                    fmFrequenciesCard.classList.remove('hidden');
+
+                    document.getElementById('sat-info-fm-uplink').textContent = `${satConfig.uplink.toFixed(4)} MHz`;
+                    document.getElementById('sat-info-fm-downlink').textContent = `${satConfig.downlink.toFixed(4)} MHz`;
+                }
                 infoCard.classList.remove('hidden');
-
-                const centerUplink = (satConfig.uplink_start + satConfig.uplink_end) / 2;
-                const centerDownlink = (satConfig.downlink_start + satConfig.downlink_end) / 2;
-                
-                uplinkFreqInput.value = centerUplink.toFixed(5);
-                downlinkFreqInput.value = centerDownlink.toFixed(5);
-
-                calcDownlinkEl.textContent = '-';
-                calcUplinkEl.textContent = '-';
-
+                updateFrequencyCalculations();
             } else {
                 infoCard.classList.add('hidden');
             }
@@ -575,21 +617,13 @@ MESAT1
         }
 
         function updateFrequencyCalculations() {
-            if (!satrec || !observerLocation) {
-                 calcDownlinkEl.textContent = '-';
-                 calcUplinkEl.textContent = '-';
-                 return;
-            };
+            if (!satrec || !observerLocation) return;
 
             const satConfig = SATELLITES[selectedSatelliteKey];
             const now = new Date();
             const positionAndVelocity = satellite.propagate(satrec, now);
             
-            if (!positionAndVelocity.position || !positionAndVelocity.velocity) {
-                calcDownlinkEl.textContent = '-';
-                calcUplinkEl.textContent = '-';
-                return;
-            }
+            if (!positionAndVelocity.position || !positionAndVelocity.velocity) return;
 
             const gmst = satellite.gstime(now);
             const observerGd = {
@@ -603,35 +637,41 @@ MESAT1
             const velocityEcf = satellite.eciToEcf(positionAndVelocity.velocity, gmst);
             const dopplerFactor = satellite.dopplerFactor(observerEcf, positionEcf, velocityEcf);
             
-            if (isNaN(dopplerFactor)) {
-                calcDownlinkEl.textContent = '-';
-                calcUplinkEl.textContent = '-';
-                return;
-            }
+            if (isNaN(dopplerFactor)) return;
 
-            const transponderCenterUp = (satConfig.uplink_start + satConfig.uplink_end) / 2 * 1e6;
-            const transponderCenterDown = (satConfig.downlink_start + satConfig.downlink_end) / 2 * 1e6;
+            if (satConfig.type === 'linear') {
+                const transponderCenterUp = (satConfig.uplink_start + satConfig.uplink_end) / 2 * 1e6;
+                const transponderCenterDown = (satConfig.downlink_start + satConfig.downlink_end) / 2 * 1e6;
 
-            const upFreqGround = parseFloat(uplinkFreqInput.value) * 1e6;
-            if (!isNaN(upFreqGround)) {
-                const upFreqAtSat = upFreqGround * dopplerFactor;
-                const offset = upFreqAtSat - transponderCenterUp;
-                const downFreqAtSat = satConfig.inverting ? (transponderCenterDown - offset) : (transponderCenterDown + offset);
-                const downFreqAtGround = downFreqAtSat * dopplerFactor;
-                calcDownlinkEl.textContent = (downFreqAtGround / 1e6).toFixed(5);
-            } else {
-                 calcDownlinkEl.textContent = '-';
-            }
+                const upFreqGround = parseFloat(uplinkFreqInput.value) * 1e6;
+                if (!isNaN(upFreqGround)) {
+                    const upFreqAtSat = upFreqGround * dopplerFactor;
+                    const offset = upFreqAtSat - transponderCenterUp;
+                    const downFreqAtSat = satConfig.inverting ? (transponderCenterDown - offset) : (transponderCenterDown + offset);
+                    const downFreqAtGround = downFreqAtSat * dopplerFactor;
+                    calcDownlinkEl.textContent = (downFreqAtGround / 1e6).toFixed(5);
+                } else {
+                     calcDownlinkEl.textContent = '-';
+                }
 
-            const downFreqGround = parseFloat(downlinkFreqInput.value) * 1e6;
-            if (!isNaN(downFreqGround)) {
-                const downFreqAtSat = downFreqGround / dopplerFactor;
-                const offset = downFreqAtSat - transponderCenterDown;
-                const upFreqAtSat = satConfig.inverting ? (transponderCenterUp - offset) : (transponderCenterUp + offset);
-                const upFreqAtGround = upFreqAtSat / dopplerFactor;
-                calcUplinkEl.textContent = (upFreqAtGround / 1e6).toFixed(5);
-            } else {
-                calcUplinkEl.textContent = '-';
+                const downFreqGround = parseFloat(downlinkFreqInput.value) * 1e6;
+                if (!isNaN(downFreqGround)) {
+                    const downFreqAtSat = downFreqGround / dopplerFactor;
+                    const offset = downFreqAtSat - transponderCenterDown;
+                    const upFreqAtSat = satConfig.inverting ? (transponderCenterUp - offset) : (transponderCenterUp + offset);
+                    const upFreqAtGround = upFreqAtSat / dopplerFactor;
+                    calcUplinkEl.textContent = (upFreqAtGround / 1e6).toFixed(5);
+                } else {
+                    calcUplinkEl.textContent = '-';
+                }
+            } else { // FM satellite
+                // **FIX**: Correct Doppler calculation for FM satellites.
+                // Uplink: User must pre-correct, so divide by factor.
+                const upDopplerCorrected = (satConfig.uplink * 1e6) / dopplerFactor; 
+                // Downlink: User receives a shifted signal, so multiply by factor.
+                const downDopplerCorrected = (satConfig.downlink * 1e6) * dopplerFactor; 
+                fmUplinkDisplay.textContent = (upDopplerCorrected / 1e6).toFixed(5);
+                fmDownlinkDisplay.textContent = (downDopplerCorrected / 1e6).toFixed(5);
             }
         }
 
